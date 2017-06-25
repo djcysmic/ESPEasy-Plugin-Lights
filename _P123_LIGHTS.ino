@@ -126,7 +126,7 @@ boolean Plugin_123(byte function, struct EventStruct *event, String& string)
         string += F("<TR><TD><hr>Lights Plugin V.");
         string += Plugin_123_version;
         string += F("<hr></TD><TD><hr>Check that Gpios are not used elsewhere (plugins or hardware tab)<hr><TD>");
-        
+
         string += F("<TR><TD>Enable RGB Channels:<TD>");
         if (Settings.TaskDevicePluginConfigFloat[event->TaskIndex][1]) {
           string += F("<input type=checkbox name=plugin_123_enableRGB checked>");
@@ -164,8 +164,8 @@ boolean Plugin_123(byte function, struct EventStruct *event, String& string)
           string += F("<input type=checkbox name=plugin_123_enableCW>");
 
         if (Settings.TaskDevicePluginConfigFloat[event->TaskIndex][2]        //WW+CW active
-            && Settings.TaskDevicePluginConfigFloat[event->TaskIndex][3])   
-        { 
+            || Settings.TaskDevicePluginConfigFloat[event->TaskIndex][3])
+        {
           string += F("<TR><TD>Maximize White Brightness:<TD>");
           if (Settings.TaskDevicePluginConfigLong[event->TaskIndex][0])
             string += F("<input type=checkbox name=plugin_123_maxBri checked>");
@@ -175,7 +175,7 @@ boolean Plugin_123(byte function, struct EventStruct *event, String& string)
 
           sprintf_P(tmpString, PSTR("<TR><TD>Pon Brightness (%):<TD><input type='text' name='plugin_123_ponVal' value='%u'>"), Settings.TaskDevicePluginConfig[event->TaskIndex][7]);
           string += tmpString;
-          
+
 
 //          sprintf_P(tmpString, PSTR("<TR><TD>Default Fading Time (s):<TD><input type='text' name='plugin_123_fadingTime' value='%u'>"), Settings.TaskDevicePluginConfigFloat[event->TaskIndex][0]);
 //          //sprintf_P(tmpString, PSTR("<TR><TD>Default Fading Time (s):<TD><input type='text' name='plugin_123_fadingTime' value='%u'>"), Settings.TaskDevicePluginConfigFloat[event->TaskIndex][0]);
@@ -240,7 +240,7 @@ boolean Plugin_123(byte function, struct EventStruct *event, String& string)
         Plugin_123_options.ww_enabled       = Settings.TaskDevicePluginConfigFloat[event->TaskIndex][2];
         Plugin_123_options.cw_enabled       = Settings.TaskDevicePluginConfigFloat[event->TaskIndex][3];
         Plugin_123_options.maxBri_enabled   = Settings.TaskDevicePluginConfigLong[event->TaskIndex][0];
-        Plugin_123_options.sendData_enabled = Settings.TaskDeviceSendData[event->TaskIndex];
+        //Plugin_123_options.sendData_enabled = Settings.TaskDeviceSendData[event->TaskIndex];
         if (Settings.TaskDevicePluginConfig[event->TaskIndex][5] > 0)
           Plugin_123_options.wwTemp = Settings.TaskDevicePluginConfig[event->TaskIndex][5];
         if (Settings.TaskDevicePluginConfig[event->TaskIndex][6] > 0)
@@ -256,13 +256,13 @@ boolean Plugin_123(byte function, struct EventStruct *event, String& string)
             pinMode(Plugin_123_pins[PinIndex].PinNo, OUTPUT);
           }
           log += F("RGB ");
-        } 
+        }
         else { log += F("noRGB "); }
-        
+
         if (Plugin_123_options.ww_enabled) {
           Plugin_123_pins[3].PinNo = Settings.TaskDevicePluginConfig[event->TaskIndex][3];
           log += F("WW ");
-        } 
+        }
         else { log += F("noWW "); }
 
         if (Plugin_123_options.cw_enabled) {
@@ -288,11 +288,11 @@ boolean Plugin_123(byte function, struct EventStruct *event, String& string)
           Plugin_123_setLightParams("ct");
           Plugin_123_setPins_Initiate();
           log += F("PON]");
-        } 
+        }
         else { log += F("noPON]"); }
-        
+
         addLog(LOG_LEVEL_INFO, log);
-        
+
         Plugin_123_init = true;
         success = true;
 //        if (Settings.TaskDevicePluginConfigLong[event->TaskIndex][1]) Plugin_123_triggerSendDataAfterBoot = true;
@@ -353,7 +353,7 @@ boolean Plugin_123(byte function, struct EventStruct *event, String& string)
           {
             Plugin_123_lightParam.rgbStr = parseString(string, 3);         // rgb string (eg. 11FFAA)
             Plugin_123_lightParam.fading = (parseString(string, 4) == "")  // transiotion time
-              ? Plugin_123_defaultFadingTime 
+              ? Plugin_123_defaultFadingTime
               : parseString(string, 4).toFloat();
             Plugin_123_setCurrentLevelToZeroIfOff();
             Plugin_123_setLightParams("rgb");
@@ -361,12 +361,12 @@ boolean Plugin_123(byte function, struct EventStruct *event, String& string)
             Plugin_123_setPins_Initiate();
           }
 
- 
+
           else if (subCommand == F("ct"))
           {
             Plugin_123_lightParam.ct     = event->Par2;                    // color temp val (eg. 3200)
             Plugin_123_lightParam.fading = (parseString(string, 4) == "")  // transition time
-              ? Plugin_123_defaultFadingTime 
+              ? Plugin_123_defaultFadingTime
               : parseString(string, 4).toFloat();
             if (parseString(string, 5) != "")  // pct
               Plugin_123_lightParam.pct = parseString(string, 5).toInt();
@@ -380,12 +380,13 @@ boolean Plugin_123(byte function, struct EventStruct *event, String& string)
           else if (subCommand == F("pct")) {
             Plugin_123_lightParam.pct    = event->Par2;                    // white brightness in %
             Plugin_123_lightParam.fading = (parseString(string, 4) == "")  // transition time
-              ? Plugin_123_defaultFadingTime 
+              ? Plugin_123_defaultFadingTime
               : parseString(string, 4).toFloat();
             if (parseString(string, 5) != "")  // ct
               Plugin_123_lightParam.ct = parseString(string, 5).toInt();
             Plugin_123_setCurrentLevelToZeroIfOff();
-            Plugin_123_setLightParams("ct");
+            if      (Plugin_123_lightParam.colorMode == 1) { Plugin_123_setLightParams("rgb"); }
+            else if (Plugin_123_lightParam.colorMode == 2) { Plugin_123_setLightParams("ct");  }
             Plugin_123_lightParam.state = 1;
             Plugin_123_setPins_Initiate();
           }
@@ -397,8 +398,8 @@ boolean Plugin_123(byte function, struct EventStruct *event, String& string)
 
 
           if (subCommand == F("on")) {
-            Plugin_123_lightParam.fading = (parseString(string, 3) == "") 
-              ? Plugin_123_defaultFadingTime 
+            Plugin_123_lightParam.fading = (parseString(string, 3) == "")
+              ? Plugin_123_defaultFadingTime
               : parseString(string, 3).toFloat();
             Plugin_123_setCurrentLevelToZeroIfOff();
             if      (Plugin_123_lightParam.colorMode == 1) { Plugin_123_setLightParams("rgb"); }
@@ -409,8 +410,8 @@ boolean Plugin_123(byte function, struct EventStruct *event, String& string)
 
 
           if (subCommand == F("off")) {
-            Plugin_123_lightParam.fading = (parseString(string, 3) == "") 
-              ? Plugin_123_defaultFadingTime 
+            Plugin_123_lightParam.fading = (parseString(string, 3) == "")
+              ? Plugin_123_defaultFadingTime
               : parseString(string, 3).toFloat();
 
             // Save current FadingTargetLevel, will be restored in Plugin_123_setPins_Finish()
@@ -424,8 +425,8 @@ boolean Plugin_123(byte function, struct EventStruct *event, String& string)
           }
 
 
-          else if ( subCommand != F("rgb") && subCommand != F("ct") 
-                 && subCommand != F("pct") && subCommand != F("toggle") 
+          else if ( subCommand != F("rgb") && subCommand != F("ct")
+                 && subCommand != F("pct") && subCommand != F("toggle")
                  && subCommand != F("on")  && subCommand != F("off") )
           {
             log = F("Lights: unknown subcommand: ");
@@ -444,7 +445,7 @@ boolean Plugin_123(byte function, struct EventStruct *event, String& string)
             SendStatus(event->Source, json); // send http response to controller (JSON fmormat)
             break;
           }
-          
+
 
         } // command lights
 
@@ -468,6 +469,10 @@ void Plugin_123_setLightParams(String cmd)
     Plugin_123_lightParam.colorMode = 1;
     int _white_;
 
+    // fail-safe
+    if (Plugin_123_lightParam.pct < 0)        Plugin_123_lightParam.pct = 0;
+    else if (Plugin_123_lightParam.pct > 100) Plugin_123_lightParam.pct = 100;
+
     // http://stackoverflow.com/questions/23576827/arduino-convert-a-sting-hex-ffffff-into-3-int
     int32_t rgbDec = Plugin_123_rgbStr2Num(Plugin_123_lightParam.rgbStr);
     if (rgbDec > 16777215) rgbDec = 16777215;
@@ -476,23 +481,28 @@ void Plugin_123_setLightParams(String cmd)
     Plugin_123_pins[1].FadingTargetLevel = (rgbDec >> 8 & 0xFF);
     Plugin_123_pins[2].FadingTargetLevel = (rgbDec & 0xFF);
 
-    if (Plugin_123_options.ww_enabled || Plugin_123_options.cw_enabled) {
-      _white_ = Plugin_123_rgb2WhitePortion(Plugin_123_pins[0].FadingTargetLevel, Plugin_123_pins[1].FadingTargetLevel, Plugin_123_pins[2].FadingTargetLevel, 255);
-      Plugin_123_pins[0].FadingTargetLevel -= _white_;
-      Plugin_123_pins[1].FadingTargetLevel -= _white_;
-      Plugin_123_pins[2].FadingTargetLevel -= _white_;
-    }
+    // Brightness of r, g, b values
+    Plugin_123_pins[0].FadingTargetLevel = Plugin_123_pins[0].FadingTargetLevel * Plugin_123_lightParam.pct / 100;
+    Plugin_123_pins[1].FadingTargetLevel = Plugin_123_pins[1].FadingTargetLevel * Plugin_123_lightParam.pct / 100;
+    Plugin_123_pins[2].FadingTargetLevel = Plugin_123_pins[2].FadingTargetLevel * Plugin_123_lightParam.pct / 100;
+
+    //if (Plugin_123_options.ww_enabled || Plugin_123_options.cw_enabled) {
+    //  _white_ = Plugin_123_rgb2WhitePortion(Plugin_123_pins[0].FadingTargetLevel, Plugin_123_pins[1].FadingTargetLevel, Plugin_123_pins[2].FadingTargetLevel, 255);
+    //  Plugin_123_pins[0].FadingTargetLevel -= _white_;
+    //  Plugin_123_pins[1].FadingTargetLevel -= _white_;
+    //  Plugin_123_pins[2].FadingTargetLevel -= _white_;
+    //}
 
     // todo: split w ->ww/cw with ct and use ww/cw in setPins()
 
     if (Plugin_123_options.ww_enabled && Plugin_123_options.cw_enabled) {
       if (!Plugin_123_options.maxBri_enabled) _white_ /= 2;
     }
-    Plugin_123_pins[0].FadingTargetLevel *=4;
-    Plugin_123_pins[1].FadingTargetLevel *=4;
-    Plugin_123_pins[2].FadingTargetLevel *=4;
-    Plugin_123_pins[3].FadingTargetLevel = _white_ *4;
-    Plugin_123_pins[4].FadingTargetLevel = _white_ *4;
+    Plugin_123_pins[0].FadingTargetLevel *= 4;
+    Plugin_123_pins[1].FadingTargetLevel *= 4;
+    Plugin_123_pins[2].FadingTargetLevel *= 4;
+    Plugin_123_pins[3].FadingTargetLevel = 0; //_white_ *4;
+    Plugin_123_pins[4].FadingTargetLevel = 0; //_white_ *4;
   } // rgb
 
   // --- ct ww cw --------------------------------------------------------------------
@@ -510,17 +520,17 @@ void Plugin_123_setLightParams(String cmd)
     for (int PinIndex = 0; PinIndex < 3; PinIndex++) {
       Plugin_123_pins[PinIndex].FadingTargetLevel = 0;
     }
-   
+
     float wwTemp = Plugin_123_options.wwTemp;
     float cwTemp = Plugin_123_options.cwTemp;
-    
+
     // correct ct values if out of range
     if (Plugin_123_lightParam.ct < wwTemp) {Plugin_123_lightParam.ct = wwTemp;}
     if (Plugin_123_lightParam.ct > cwTemp) {Plugin_123_lightParam.ct = cwTemp;}
-   
+
     //maxBri !constant
     float temp = Plugin_123_lightParam.ct;
-    
+
     cwTemp -= wwTemp;
     temp   -= wwTemp;
     float cwFactor = temp / cwTemp;
@@ -551,7 +561,7 @@ void Plugin_123_setLightParams(String cmd)
 
   } // ct (ww/cw)
 
-  
+
   // --- ct !ww !cw --------------------------------------------------------------------
   else if (cmd == F("ct") && !Plugin_123_options.ww_enabled && !Plugin_123_options.cw_enabled)
   {
@@ -565,19 +575,82 @@ void Plugin_123_setLightParams(String cmd)
   // todo: adopt rgb setting ww or cw
   // --- ct ww ^ cw --------------------------------------------------------------------
   else if (cmd == F("ct") && (Plugin_123_options.ww_enabled ^ Plugin_123_options.cw_enabled))
+  // {
+  //   if (Plugin_123_debug) Serial.println(F("Lights: setLightsParam: ct ww ^ cw "));
+  //   Plugin_123_lightParam.colorMode = 2;
+  //   Plugin_123_ct2RGB();
+  //   int w = Plugin_123_rgb2WhitePortion(Plugin_123_pins[0].FadingTargetLevel, Plugin_123_pins[1].FadingTargetLevel, Plugin_123_pins[2].FadingTargetLevel, 1023);
+  //     Plugin_123_pins[0].FadingTargetLevel -= w;
+  //     Plugin_123_pins[1].FadingTargetLevel -= w;
+  //     Plugin_123_pins[2].FadingTargetLevel -= w;
+  //
+  //   if (Plugin_123_options.ww_enabled)
+  //     Plugin_123_pins[3].FadingTargetLevel = w;
+  //   else
+  //     Plugin_123_pins[4].FadingTargetLevel = w;
+  //
+  // }
   {
-    if (Plugin_123_debug) Serial.println(F("Lights: setLightsParam: ct ww ^ cw "));
-    Plugin_123_lightParam.colorMode = 2;
-    Plugin_123_ct2RGB();
-    int w = Plugin_123_rgb2WhitePortion(Plugin_123_pins[0].FadingTargetLevel, Plugin_123_pins[1].FadingTargetLevel, Plugin_123_pins[2].FadingTargetLevel, 1023);
-      Plugin_123_pins[0].FadingTargetLevel -= w;
-      Plugin_123_pins[1].FadingTargetLevel -= w;
-      Plugin_123_pins[2].FadingTargetLevel -= w;
+     if (Plugin_123_debug) Serial.println(F("Lights: setLightsParam: ct ww ^ cw "));
 
-    if (Plugin_123_options.ww_enabled)
-      Plugin_123_pins[3].FadingTargetLevel = w;
+    Plugin_123_lightParam.colorMode = 2;
+
+    // fail-safe
+    if (Plugin_123_lightParam.pct < 0)        Plugin_123_lightParam.pct = 0;
+    else if (Plugin_123_lightParam.pct > 100) Plugin_123_lightParam.pct = 100;
+
+    // switch rgb lights off
+    //for (int PinIndex = 0; PinIndex < 3; PinIndex++) {
+    //  Plugin_123_pins[PinIndex].FadingTargetLevel = 0;
+    //}
+
+    float wwTemp = Plugin_123_options.wwTemp;
+    float cwTemp = Plugin_123_options.cwTemp;
+
+    // correct ct values if out of range
+    if (Plugin_123_lightParam.ct < wwTemp) {Plugin_123_lightParam.ct = wwTemp;}
+    if (Plugin_123_lightParam.ct > cwTemp) {Plugin_123_lightParam.ct = cwTemp;}
+
+    //maxBri !constant
+    float temp = Plugin_123_lightParam.ct;
+
+    cwTemp -= wwTemp;
+    temp   -= wwTemp;
+    float cwFactor = temp / cwTemp;
+    float wwFactor = 1 - cwFactor;
+
+    float maxBri;
+    if (Plugin_123_options.maxBri_enabled)
+    {
+      if (cwFactor > wwFactor)
+        maxBri = 1 / cwFactor;
+      else
+        maxBri = 1 / wwFactor;
+    }
     else
-      Plugin_123_pins[4].FadingTargetLevel = w;
+      maxBri = 1;
+
+    if (Plugin_123_options.ww_enabled) {
+      Plugin_123_pins[0].FadingTargetLevel = Plugin_123_lightParam.pct * 10.23 * cwFactor * maxBri;
+      Plugin_123_pins[1].FadingTargetLevel = Plugin_123_lightParam.pct * 10.23 * cwFactor * maxBri;
+      Plugin_123_pins[2].FadingTargetLevel = Plugin_123_lightParam.pct * 10.23 * cwFactor * maxBri;
+      Plugin_123_pins[3].FadingTargetLevel = Plugin_123_lightParam.pct * 10.23 * wwFactor * maxBri;
+    }
+    else if (Plugin_123_options.cw_enabled) {
+      Plugin_123_pins[0].FadingTargetLevel = Plugin_123_lightParam.pct * 10.23 * wwFactor * maxBri;
+      Plugin_123_pins[1].FadingTargetLevel = Plugin_123_lightParam.pct * 10.23 * wwFactor * maxBri;
+      Plugin_123_pins[2].FadingTargetLevel = Plugin_123_lightParam.pct * 10.23 * wwFactor * maxBri;
+      Plugin_123_pins[4].FadingTargetLevel = Plugin_123_lightParam.pct * 10.23 * cwFactor * maxBri;
+    }
+
+    if (Plugin_123_debug) {
+      Serial.print(F("Lights: wwFactor: "));
+      Serial.println(wwFactor);
+      Serial.print(F("Lights: cwFactor: "));
+      Serial.println(cwFactor);
+      Serial.print(F("Lights: maxBri: "));
+      Serial.println(maxBri);
+    }
 
   } // ct: ww ^ cw
 
@@ -595,7 +668,7 @@ void Plugin_123_setPins_Initiate()
     if (Plugin_123_pins[PinIndex].FadingTargetLevel > 1019 )
       Plugin_123_pins[PinIndex].FadingTargetLevel = 1023;
   }
-  
+
   // fading will be done in Plugin_123_FadingTimer (called by timer, triggered by FadingDirection != 0)
   if (Plugin_123_lightParam.fading > 0 && Plugin_123_defaultFadingTime >= 0) {
     for (int PinIndex = 0; PinIndex < 5; PinIndex++) {
@@ -664,7 +737,7 @@ void Plugin_123_setPins_Finish()
   }
 
   // send current values via controller plugin, done in PLUGIN_TEN_PER_SECOND
-//  if (Plugin_123_options.sendData_enabled)  Plugin_123_triggerSendData = true; 
+//  if (Plugin_123_options.sendData_enabled)  Plugin_123_triggerSendData = true;
 }
 
 
@@ -686,7 +759,7 @@ void Plugin_123_FadingTimer()
         {
           Plugin_123_pins[PinIndex].FadingDirection = 0;
           Plugin_123_pins[PinIndex].CurrentLevel = Plugin_123_pins[PinIndex].FadingTargetLevel;
-          if (Plugin_123_pins[0].FadingDirection == 0 && Plugin_123_pins[1].FadingDirection == 0 && Plugin_123_pins[2].FadingDirection == 0 && Plugin_123_pins[3].FadingDirection == 0 && Plugin_123_pins[4].FadingDirection == 0) {           
+          if (Plugin_123_pins[0].FadingDirection == 0 && Plugin_123_pins[1].FadingDirection == 0 && Plugin_123_pins[2].FadingDirection == 0 && Plugin_123_pins[3].FadingDirection == 0 && Plugin_123_pins[4].FadingDirection == 0) {
             addLog(LOG_LEVEL_INFO, "Lights: Fade up complete");
             Plugin_123_setPins_Finish();
           }
@@ -746,7 +819,7 @@ void Plugin_123_ct2RGB()
   // reduce ct to a valid/useful value
   if (Plugin_123_lightParam.ct > 5500) Plugin_123_lightParam.ct = 5500;
   if (Plugin_123_lightParam.ct < 2500) Plugin_123_lightParam.ct = 2500;
-  
+
   // kelvin -> mired
   double ct = 1000000/Plugin_123_lightParam.ct;
   // adjusted by 1000K
@@ -761,7 +834,7 @@ void Plugin_123_ct2RGB()
   if (r < 0)     r = 0 ;
   if (r > 255)   r = 255 ;
 
-  g = (temp <= 66) 
+  g = (temp <= 66)
     ? 99.4708025861 * log(temp) - 161.1195681661
     : pow(288.1221695283 * (temp - 60), -0.0755148492);
   if (g < 0)   g = 0 ;
@@ -859,8 +932,5 @@ void Plugin_123_dumpValues()
   Serial.print(F("Lights: cw: "));            Serial.print(Plugin_123_pins[4].CurrentLevel); Serial.print(F(" -> ")); Serial.println(Plugin_123_pins[4].FadingTargetLevel);
   Serial.print(F("Lights: state: "));         Serial.print(Plugin_123_lightParam.state);
   Serial.println(F(""));
-  
+
 }
-
-
-

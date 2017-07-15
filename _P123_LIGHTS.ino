@@ -445,12 +445,10 @@ boolean Plugin_123(byte function, struct EventStruct *event, String& string)
             SendStatus(event->Source, json); // send http response to controller (JSON fmormat)
             break;
           }
-
+        		Plugin_123_SendStatus(event->Source);
+        		if (Plugin_123_debug) Plugin_123_dumpValues();
 
         } // command lights
-
-        Plugin_123_SendStatus(event->Source);
-        if (Plugin_123_debug) Plugin_123_dumpValues();
 
       } //case PLUGIN_WRITE
 

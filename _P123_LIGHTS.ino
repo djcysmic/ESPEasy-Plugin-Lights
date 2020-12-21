@@ -1,3 +1,4 @@
+#ifdef USES_P123
 //#######################################################################################################
 //#################################### Plugin 123: Lights ###############################################
 //#######################################################################################################
@@ -87,7 +88,8 @@ boolean Plugin_123(byte function, struct EventStruct *event, String& string)
         //Device[deviceCount].VType = SENSOR_TYPE_SINGLE;
         //Device[deviceCount].VType = SENSOR_TYPE_DUAL;
         //Device[deviceCount].VType = SENSOR_TYPE_TRIPLE;
-        Device[deviceCount].VType = SENSOR_TYPE_QUAD;
+        Device[deviceCount].VType = Sensor_VType::SENSOR_TYPE_QUAD;
+        //Device[deviceCount].VType = SENSOR_TYPE_QUAD;
 //        Device[deviceCount].VType = SENSOR_TYPE_HEXA;
         //Device[deviceCount].VType = SENSOR_TYPE_TEMP_BARO;
         //Device[deviceCount].VType = SENSOR_TYPE_DIMMER;
@@ -184,36 +186,36 @@ boolean Plugin_123(byte function, struct EventStruct *event, String& string)
 
     case PLUGIN_WEBFORM_SAVE:         // ------------------------------------------->
       {
-        String plugin1 = WebServer.arg("plugin_123_RedPin");
+        String plugin1 = web_server.arg("plugin_123_RedPin");
         Settings.TaskDevicePluginConfig[event->TaskIndex][0] = plugin1.toInt();
-        String plugin2 = WebServer.arg("plugin_123_GreenPin");
+        String plugin2 = web_server.arg("plugin_123_GreenPin");
         Settings.TaskDevicePluginConfig[event->TaskIndex][1] = plugin2.toInt();
-        String plugin3 = WebServer.arg("plugin_123_BluePin");
+        String plugin3 = web_server.arg("plugin_123_BluePin");
         Settings.TaskDevicePluginConfig[event->TaskIndex][2] = plugin3.toInt();
-        String plugin4 = WebServer.arg("plugin_123_WWPin");
+        String plugin4 = web_server.arg("plugin_123_WWPin");
         Settings.TaskDevicePluginConfig[event->TaskIndex][3] = plugin4.toInt();
-        String plugin5 = WebServer.arg("plugin_123_CWPin");
+        String plugin5 = web_server.arg("plugin_123_CWPin");
         Settings.TaskDevicePluginConfig[event->TaskIndex][4] = plugin5.toInt();
-        String plugin6 = WebServer.arg("plugin_123_WWTemp");
+        String plugin6 = web_server.arg("plugin_123_WWTemp");
         Settings.TaskDevicePluginConfig[event->TaskIndex][5] = plugin6.toInt();
-        String plugin7 = WebServer.arg("plugin_123_CWTemp");
+        String plugin7 = web_server.arg("plugin_123_CWTemp");
         Settings.TaskDevicePluginConfig[event->TaskIndex][6] = plugin7.toInt();
-        String plugin13 = WebServer.arg("plugin_123_ponVal");
+        String plugin13 = web_server.arg("plugin_123_ponVal");
         Settings.TaskDevicePluginConfig[event->TaskIndex][7] = plugin13.toInt();
-        String plugin15 = WebServer.arg("plugin_123_fadingTime");
+        String plugin15 = web_server.arg("plugin_123_fadingTime");
         Settings.TaskDevicePluginConfigFloat[event->TaskIndex][0] = plugin15.toFloat();
-        String plugin16 = WebServer.arg("plugin_123_PWMFreq");
+        String plugin16 = web_server.arg("plugin_123_PWMFreq");
         Settings.TaskDevicePluginConfigLong[event->TaskIndex][2] = plugin16.toInt();
 
-        String plugin8 = WebServer.arg("plugin_123_enableRGB");
+        String plugin8 = web_server.arg("plugin_123_enableRGB");
         Settings.TaskDevicePluginConfigFloat[event->TaskIndex][1] = (plugin8 == "on");
-        String plugin9 = WebServer.arg("plugin_123_enableWW");
+        String plugin9 = web_server.arg("plugin_123_enableWW");
         Settings.TaskDevicePluginConfigFloat[event->TaskIndex][2] = (plugin9 == "on");
-        String plugin10 = WebServer.arg("plugin_123_enableCW");
+        String plugin10 = web_server.arg("plugin_123_enableCW");
         Settings.TaskDevicePluginConfigFloat[event->TaskIndex][3] = (plugin10 == "on");
-        String plugin11 = WebServer.arg("plugin_123_maxBri");
+        String plugin11 = web_server.arg("plugin_123_maxBri");
         Settings.TaskDevicePluginConfigLong[event->TaskIndex][0] = (plugin11 == "on");
-        String plugin14 = WebServer.arg("plugin_123_sendBootState");
+        String plugin14 = web_server.arg("plugin_123_sendBootState");
         Settings.TaskDevicePluginConfigLong[event->TaskIndex][1] = (plugin14 == "on");
 
         // SaveTaskSettings(event->TaskIndex);
@@ -412,7 +414,7 @@ boolean Plugin_123(byte function, struct EventStruct *event, String& string)
               Plugin_123_pins[PinIndex].FadingTargetTmp = Plugin_123_pins[PinIndex].FadingTargetLevel;
               Plugin_123_pins[PinIndex].FadingTargetLevel = 0;
             }
-            boolean Plugin_123_tempOff = true;
+            Plugin_123_tempOff = true;
             Plugin_123_lightParam.state = 0;
             Plugin_123_setPins_Initiate();
           }
@@ -436,6 +438,7 @@ boolean Plugin_123(byte function, struct EventStruct *event, String& string)
             json += F("\"\n");
             json += F("}\n");
             SendStatus(event->Source, json); // send http response to controller (JSON fmormat)
+            printToWeb=false;
             break;
           }
           Plugin_123_SendStatus(event->Source);
@@ -991,7 +994,7 @@ void Plugin_123_setCurrentLevelToZeroIfOff()
 // ---------------------------------------------------------------------------------
 // ------------------------------ JsonResponse -------------------------------------
 // ---------------------------------------------------------------------------------
-void Plugin_123_SendStatus(byte eventSource)
+void Plugin_123_SendStatus(EventValueSource::Enum eventSource)
 {
   String log = String(F("Lights: Set ")) + Plugin_123_pins[0].FadingTargetLevel
              + String(F("/")) + Plugin_123_pins[1].FadingTargetLevel + String(F("/")) + Plugin_123_pins[2].FadingTargetLevel
@@ -1017,6 +1020,7 @@ void Plugin_123_SendStatus(byte eventSource)
   json += cm;
   json += F("\"\n}\n");
   SendStatus(eventSource, json); // send http response to controller (JSON fmormat)
+  printToWeb=false;
 }
 
 
@@ -1038,3 +1042,5 @@ void Plugin_123_dumpValues()
   Serial.println(F(""));
 
 }
+
+#endif // USES_P123
